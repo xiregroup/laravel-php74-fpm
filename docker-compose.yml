@@ -1,0 +1,44 @@
+version: "3"
+
+services:
+  app:
+    build:
+      dockerfile: .docker/Dockerfile
+      context: .
+    container_name: app
+    restart: unless-stopped
+    tty: true
+    working_dir: /var/www
+    links:
+      - database
+    volumes:
+      - .:/var/www
+      - ./.docker/php/php.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./.docker/php/opcache.ini:/usr/local/etc/php/conf.d/opcache.ini
+      - ./.docker/vhosts:/etc/apache2/sites-enabled
+      - ./.docker/data/logs/apache2:/var/log/apache2
+    networks:
+      - dashboard-network
+    ports:
+      - "80:80"
+      - "443:443"
+
+  database:
+    image: mysql
+    restart: 'always'
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - dashboard-dbdata:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+    networks:
+      - dashboard-network
+
+networks:
+  dashboard-network:
+    driver: bridge
+volumes:
+  dashboard-dbdata:
+    driver: local
